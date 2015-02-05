@@ -1,5 +1,5 @@
 from __future__ import unicode_literals
-from django.contrib.gis.geos import Point
+from django.contrib.gis.geos import Point, Polygon
 from django.contrib.gis.measure import Distance, D
 from haystack.constants import WGS_84_SRID
 from haystack.exceptions import SpatialError
@@ -23,6 +23,18 @@ def ensure_point(geom):
 
     if geom.geom_type != 'Point':
         raise SpatialError("Provided geometry '%s' is not a 'Point'." % geom)
+
+    return geom
+
+
+def ensure_polygon(geom):
+    """
+    Makes sure the parameter passed in looks like a GEOS ``Polygon``.
+    """
+    ensure_geometry(geom)
+
+    if geom.geom_type != 'Polygon':
+        raise SpatialError("Provided geometry '%s' is not a 'Polygon'." % geom)
 
     return geom
 

@@ -141,8 +141,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                 self.conn.indices.put_mapping(index=self.index_name, doc_type='modelresult', body=current_mapping)
                 self.existing_mapping = current_mapping
             except Exception:
-                if not self.silently_fail:
-                    raise
+                raise
 
         self.setup_complete = True
 
@@ -247,7 +246,7 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                             fields='', highlight=False, facets=None,
                             date_facets=None, query_facets=None,
                             narrow_queries=None, spelling_query=None,
-                            within=None, dwithin=None, distance_point=None,
+                            within=None, dwithin=None, distance_point=None, polygon=None,
                             models=None, limit_to_registered_models=None,
                             result_class=None):
         index = haystack.connections[self.connection_alias].get_unified_index()
@@ -450,6 +449,18 @@ class ElasticsearchSearchBackend(BaseSearchBackend):
                 }
             }
             filters.append(dwithin_filter)
+
+        if polygon is not None:
+            points = map(lambda x: {"lat": x[1], "lon": x[0]},
+                         polygon['polygon'].coords[0])
+            polygon_filter = {
+                "geo_polygon": {
+                    polygon['field']: {
+                        "points": points
+                    }
+                },
+            }
+            filters.append(polygon_filter)
 
         # if we want to filter, change the query type to filteres
         if filters:
@@ -902,6 +913,9 @@ class ElasticsearchSearchQuery(BaseSearchQuery):
 
         if self.within:
             search_kwargs['within'] = self.within
+
+        if self.polygon:
+            search_kwargs['polygon'] = self.polygon
 
         if spelling_query:
             search_kwargs['spelling_query'] = spelling_query
